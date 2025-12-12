@@ -2,11 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TodoApp.Api.Data;
 using TodoApp.Api.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace TodoApp.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class TodosController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -92,7 +94,7 @@ namespace TodoApp.Api.Controllers
             existingItem.Description = todoItem.Description;
             existingItem.Category = todoItem.Category;
             existingItem.OrderIndex = todoItem.OrderIndex;
-            
+
             // Handle Weekday change (Moved logic)
             if (existingItem.Weekday != todoItem.Weekday)
             {

@@ -10,6 +10,7 @@ namespace TodoApp.Api.Data
         }
 
         public DbSet<TodoItem> TodoItems { get; set; } = null!;
+        public DbSet<User> Users { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -22,6 +23,10 @@ namespace TodoApp.Api.Data
             modelBuilder.Entity<TodoItem>()
                 .Property(t => t.Title)
                 .IsRequired();
+
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Email)
+                .IsUnique();
         }
     }
 }
