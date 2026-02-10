@@ -27,6 +27,11 @@ namespace TodoApp.Api.Data
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email)
                 .IsUnique();
+
+            modelBuilder.Entity<TodoItem>()
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(t => t.UserId);
         }
     }
 }

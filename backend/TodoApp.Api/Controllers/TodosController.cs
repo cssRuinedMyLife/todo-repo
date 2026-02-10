@@ -23,7 +23,8 @@ namespace TodoApp.Api.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TodoItem>>> GetTodos([FromQuery] DayOfWeek? weekday = null)
         {
-            var query = _context.TodoItems.Where(t => !t.IsDone);
+            var userId = GetUserId();
+            var query = _context.TodoItems.Where(t => t.UserId == userId && !t.IsDone);
 
             if (weekday.HasValue)
             {
@@ -38,8 +39,9 @@ namespace TodoApp.Api.Controllers
         [HttpGet("history")]
         public async Task<ActionResult<IEnumerable<TodoItem>>> GetHistory()
         {
+            var userId = GetUserId();
             return await _context.TodoItems
-                .Where(t => t.IsDone)
+                .Where(t => t.UserId == userId && t.IsDone)
                 .OrderByDescending(t => t.ResolvedAt)
                 .ToListAsync();
         }
@@ -55,6 +57,11 @@ namespace TodoApp.Api.Controllers
                 return NotFound();
             }
 
+            if (todoItem.UserId != GetUserId())
+            {
+                return Forbid();
+            }
+
             return todoItem;
         }
 
@@ -67,12 +74,52 @@ namespace TodoApp.Api.Controllers
             todoItem.IsDone = false;
             todoItem.ResolvedAt = null;
             todoItem.MovedCounter = 0;
+            todoItem.UserId = GetUserId();
 
             _context.TodoItems.Add(todoItem);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetTodoItem), new { id = todoItem.Id }, todoItem);
         }
+
+        // POST: api/todos
+        [HttpPost("resolve/{id}")]
+        public async Task<IActionResult> PostResolveTodoItem(Guid id)
+        {
+
+            var todoItem = await _context.TodoItems.FindAsync(id);
+
+            if (todoItem == null)
+            {
+                return NotFound();
+            }
+
+            if (todoItem.UserId != GetUserId())
+            {
+                return Forbid();
+            }
+            todoItem.ResolvedAt = DateTime.UtcNow;
+            todoItem.IsDone = true;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!TodoItemExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return NoContent();
+        }
+
 
         // PUT: api/todos/5
         [HttpPut("{id}")]
@@ -87,6 +134,11 @@ namespace TodoApp.Api.Controllers
             if (existingItem == null)
             {
                 return NotFound();
+            }
+
+            if (existingItem.UserId != GetUserId())
+            {
+                return Forbid();
             }
 
             // Update fields
@@ -130,7 +182,7 @@ namespace TodoApp.Api.Controllers
                 }
             }
 
-            return NoContent();
+            return Ok(existingItem);
         }
 
         // DELETE: api/todos/5
@@ -152,6 +204,11 @@ namespace TodoApp.Api.Controllers
                 return NotFound();
             }
 
+            if (todoItem.UserId != GetUserId())
+            {
+                return Forbid();
+            }
+
             _context.TodoItems.Remove(todoItem);
             await _context.SaveChangesAsync();
 
@@ -161,6 +218,16 @@ namespace TodoApp.Api.Controllers
         private bool TodoItemExists(Guid id)
         {
             return _context.TodoItems.Any(e => e.Id == id);
+        }
+
+        private int GetUserId()
+        {
+            var idClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            if (idClaim == null || !int.TryParse(idClaim.Value, out int userId))
+            {
+                throw new UnauthorizedAccessException("User ID not found in token");
+            }
+            return userId;
         }
     }
 }

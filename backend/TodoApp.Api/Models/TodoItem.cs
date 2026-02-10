@@ -10,6 +10,8 @@ namespace TodoApp.Api.Models
         [Required]
         public string Title { get; set; } = string.Empty;
 
+        public int UserId { get; set; }
+
         public string? Description { get; set; }
 
         public string? Category { get; set; }
@@ -30,8 +32,6 @@ namespace TodoApp.Api.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime? ResolvedAt { get; set; }
-
-        public string? CreatedBy { get; set; }
 
         public int MovedCounter { get; set; } = 0;
     }

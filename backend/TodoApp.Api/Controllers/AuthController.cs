@@ -74,7 +74,7 @@ namespace TodoApp.Api.Controllers
             {
                 Token = jwt,
                 Email = user.Email,
-                Name = user.Name
+                Name = user.Name ?? string.Empty
             });
         }
     }
