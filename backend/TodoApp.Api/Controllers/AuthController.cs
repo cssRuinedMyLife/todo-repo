@@ -51,6 +51,7 @@ namespace TodoApp.Api.Controllers
             {
                 user = new User
                 {
+                    Id = Guid.NewGuid(),
                     Email = payload.Email,
                     Name = payload.Name,
                     GoogleSubjectId = payload.Subject

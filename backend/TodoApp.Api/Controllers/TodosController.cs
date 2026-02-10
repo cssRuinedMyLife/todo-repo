@@ -220,10 +220,10 @@ namespace TodoApp.Api.Controllers
             return _context.TodoItems.Any(e => e.Id == id);
         }
 
-        private int GetUserId()
+        private Guid GetUserId()
         {
             var idClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-            if (idClaim == null || !int.TryParse(idClaim.Value, out int userId))
+            if (idClaim == null || !Guid.TryParse(idClaim.Value, out Guid userId))
             {
                 throw new UnauthorizedAccessException("User ID not found in token");
             }

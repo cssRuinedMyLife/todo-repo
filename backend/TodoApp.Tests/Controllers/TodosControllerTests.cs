@@ -14,6 +14,20 @@ namespace TodoApp.Tests.Controllers
     public class TodosControllerTests
     {
         private DbContextOptions<AppDbContext> _dbContextOptions;
+        private readonly Guid _userId = Guid.NewGuid();
+
+        private void SetupUser(TodosController controller)
+        {
+            var user = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[]
+            {
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, _userId.ToString())
+            }, "mock"));
+
+            controller.ControllerContext = new ControllerContext()
+            {
+                HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext() { User = user }
+            };
+        }
 
         public TodosControllerTests()
         {
@@ -27,15 +41,16 @@ namespace TodoApp.Tests.Controllers
         {
             using (var context = new AppDbContext(_dbContextOptions))
             {
-                context.TodoItems.Add(new TodoItem { Title = "Active 1", IsDone = false });
-                context.TodoItems.Add(new TodoItem { Title = "Done 1", IsDone = true });
-                context.TodoItems.Add(new TodoItem { Title = "Active 2", IsDone = false });
+                context.TodoItems.Add(new TodoItem { Title = "Active 1", IsDone = false, UserId = _userId });
+                context.TodoItems.Add(new TodoItem { Title = "Done 1", IsDone = true, UserId = _userId });
+                context.TodoItems.Add(new TodoItem { Title = "Active 2", IsDone = false, UserId = _userId });
                 await context.SaveChangesAsync();
             }
 
             using (var context = new AppDbContext(_dbContextOptions))
             {
                 var controller = new TodosController(context);
+                SetupUser(controller);
                 var result = await controller.GetTodos();
 
                 var actionResult = Assert.IsType<ActionResult<IEnumerable<TodoItem>>>(result);
@@ -51,14 +66,15 @@ namespace TodoApp.Tests.Controllers
         {
             using (var context = new AppDbContext(_dbContextOptions))
             {
-                context.TodoItems.Add(new TodoItem { Title = "Active 1", IsDone = false });
-                context.TodoItems.Add(new TodoItem { Title = "Done 1", IsDone = true });
+                context.TodoItems.Add(new TodoItem { Title = "Active 1", IsDone = false, UserId = _userId });
+                context.TodoItems.Add(new TodoItem { Title = "Done 1", IsDone = true, UserId = _userId });
                 await context.SaveChangesAsync();
             }
 
             using (var context = new AppDbContext(_dbContextOptions))
             {
                 var controller = new TodosController(context);
+                SetupUser(controller);
                 var result = await controller.GetHistory();
 
                 var actionResult = Assert.IsType<ActionResult<IEnumerable<TodoItem>>>(result);
@@ -75,6 +91,7 @@ namespace TodoApp.Tests.Controllers
             using (var context = new AppDbContext(_dbContextOptions))
             {
                 var controller = new TodosController(context);
+                SetupUser(controller);
                 var newItem = new TodoItem { Title = "New Item" };
 
                 var result = await controller.PostTodoItem(newItem);
@@ -93,7 +110,7 @@ namespace TodoApp.Tests.Controllers
             Guid itemId;
             using (var context = new AppDbContext(_dbContextOptions))
             {
-                var item = new TodoItem { Title = "Original", Weekday = DayOfWeek.Monday, MovedCounter = 0 };
+                var item = new TodoItem { Title = "Original", Weekday = DayOfWeek.Monday, MovedCounter = 0, UserId = _userId };
                 context.TodoItems.Add(item);
                 await context.SaveChangesAsync();
                 itemId = item.Id;
@@ -102,6 +119,7 @@ namespace TodoApp.Tests.Controllers
             using (var context = new AppDbContext(_dbContextOptions))
             {
                 var controller = new TodosController(context);
+                SetupUser(controller);
                 var itemToUpdate = new TodoItem
                 {
                     Id = itemId,
@@ -112,7 +130,8 @@ namespace TodoApp.Tests.Controllers
 
                 var result = await controller.PutTodoItem(itemId, itemToUpdate);
 
-                Assert.IsType<NoContentResult>(result);
+                var okResult = Assert.IsType<OkObjectResult>(result);
+                Assert.IsType<TodoItem>(okResult.Value);
 
                 var updatedItem = await context.TodoItems.FindAsync(itemId);
                 Assert.Equal("Updated", updatedItem?.Title);
