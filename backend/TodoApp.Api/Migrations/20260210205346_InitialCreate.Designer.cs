@@ -11,8 +11,8 @@ using TodoApp.Api.Data;
 namespace TodoApp.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260123082544_AddUserIdToTodoItem")]
-    partial class AddUserIdToTodoItem
+    [Migration("20260210205346_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -51,8 +51,8 @@ namespace TodoApp.Api.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
 
                     b.Property<int?>("Weekday")
                         .HasColumnType("INTEGER");
@@ -66,9 +66,9 @@ namespace TodoApp.Api.Migrations
 
             modelBuilder.Entity("TodoApp.Api.Models.User", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Email")
                         .IsRequired()
